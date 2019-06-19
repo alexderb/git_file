@@ -34,15 +34,23 @@ class data_factory:
             n_xcut = basesize_x // cutsize  # number of horizontals cut maps
             n_ycut = basesize_y // cutsize  # number of verticals cut maps
             n_time = np.shape(self.raw_data)[0]
-            dataset_cut = np.zeros((n_xcut * n_ycut, n_time, cutsize, cutsize))
+            dataset_cut = []
             for i in range(0, n_xcut):
                 for j in range(0, n_ycut):
-                    dataset_cut[(i+1)*j] = self.raw_data[:, j*cutsize:(j+1)*cutsize, i*cutsize:(i+1)*cutsize]
-            self.dataset = dataset_cut
+                    if land:
+                        if not np.all(np.isnan(self.raw_data[:, j*cutsize:(j+1)*cutsize, i*cutsize:(i+1)*cutsize])):
+                            #dataset_cut[(i+1)*j] = self.raw_data[:, j*cutsize:(j+1)*cutsize, i*cutsize:(i+1)*cutsize]
+                            dataset_cut.append(self.raw_data[:, j*cutsize:(j+1)*cutsize, i*cutsize:(i+1)*cutsize])
+                    else:
+                        if not np.any(np.isnan(self.raw_data[:, j*cutsize:(j+1)*cutsize, i*cutsize:(i+1)*cutsize])):
+                            dataset_cut.append(self.raw_data[:, j * cutsize:(j + 1) * cutsize, i * cutsize:(i + 1) * cutsize])
+        else if mode == 'exp':
+
+        self.dataset = np.array(dataset_cut)
 
     def make_dataset(self):
         if np.shape(self.dataset)[2] != np.shape(self.dataset)[3]:
-            self.cutting(max(np.shape(self.dataset)[2]//2, np.shape(self.dataset)[3]//2))
+            self.cutting(min(np.shape(self.dataset)[2], np.shape(self.dataset)[3]))
 
         n_cut = np.shape(self.dataset)[0]  # number of cut dataset
         n_seq = (np.shape(self.raw_data)[0] - self.lseq + 1)  # number of sequences by cut
@@ -76,3 +84,7 @@ class data_factory:
         print(np.shape(self.data['input_raw_data']))
     def plot(self,image=0):
         plt.plot()
+    def save_dataset(self, name, repertory):
+        fichier = open(repertory + '/'+ name +'.npz','w')
+        np.savez(name, clips=self.data['clips'],clips=self.data['dims'], input_raw_data=self.data['input_raw_data'])
+        fichier.close()
